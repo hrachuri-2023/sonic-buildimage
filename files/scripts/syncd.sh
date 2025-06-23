@@ -1,6 +1,7 @@
 #!/bin/bash
 
 . /usr/local/bin/syncd_common.sh
+set -x
 
 function startplatform() {
 
@@ -155,6 +156,8 @@ else
     NET_NS=""
     SONIC_DB_CLI="sonic-db-cli"
 fi
+
+sleep 3
 
 case "$1" in
     start|wait|stop)

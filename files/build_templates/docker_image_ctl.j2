@@ -416,9 +416,12 @@ start() {
     BRCM_PLATFORM_COMMON_DIR=/usr/share/sonic/device/x86_64-broadcom_common
     SYNCD_SHM_INI=$BRCM_PLATFORM_COMMON_DIR/syncd_shm.ini
 
-    readline=$(grep '0x14e4' /proc/linux-kernel-bde)
-    bcm_chip_id=${readline#*0x14e4:0x}
+    readline=$(grep '0x14e4' /proc/linux_ngbde)
+    bcm_chip_id=${readline#*0x14e4:}
     bcm_chip_id=${bcm_chip_id::3}
+
+    SYNCD_SHM_SIZE=300m
+    bcm_chip_id=f90
 
     if [ -z "$SYNCD_SHM_SIZE" ]; then
         if [ -z "$bcm_chip_id" ]; then

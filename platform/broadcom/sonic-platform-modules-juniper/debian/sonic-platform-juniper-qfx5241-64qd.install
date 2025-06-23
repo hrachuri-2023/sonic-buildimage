@@ -1,0 +1,8 @@
+qfx5241-64qd/utils/juniper_qfx5241_64qd_util.py usr/local/bin
+qfx5241-64qd/utils/juniper_qfx5241_64qd_monitor.py usr/local/bin
+qfx5241-64qd/utils/show_thresholds usr/local/bin
+qfx5241-64qd/utils/temperature_thresholds_AFI.txt usr/local/bin
+qfx5241-64qd/utils/temperature_thresholds_AFO.txt usr/local/bin
+qfx5241-64qd/service/qfx5241-64qd-platform-init.service etc/systemd/system
+qfx5241-64qd/utils/wrapper-warm-reboot usr/local/bin
+qfx5241-64qd/utils/wrapper-fast-reboot usr/local/bin

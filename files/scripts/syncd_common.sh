@@ -12,7 +12,7 @@
 #
 
 . /usr/local/bin/asic_status.sh
-
+set -x
 function debug()
 {
     /usr/bin/logger $1

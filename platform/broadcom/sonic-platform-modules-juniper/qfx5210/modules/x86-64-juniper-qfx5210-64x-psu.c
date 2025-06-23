@@ -207,7 +207,7 @@ exit:
     return status;
 }
 
-static int qfx5210_64x_psu_remove(struct i2c_client *client)
+static void qfx5210_64x_psu_remove(struct i2c_client *client)
 {
     struct qfx5210_64x_psu_data *data = i2c_get_clientdata(client);
 
@@ -215,7 +215,7 @@ static int qfx5210_64x_psu_remove(struct i2c_client *client)
     sysfs_remove_group(&client->dev.kobj, &qfx5210_64x_psu_group);
     kfree(data);
 
-    return 0;
+    return;
 }
 
 enum psu_index 

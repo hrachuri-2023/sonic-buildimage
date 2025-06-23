@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -x
 DEV=$2
 
 SERVICE="swss"

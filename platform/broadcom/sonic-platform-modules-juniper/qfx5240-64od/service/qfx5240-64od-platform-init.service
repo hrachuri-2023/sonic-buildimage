@@ -1,0 +1,14 @@
+[Unit]
+Description=Juniper QFX5241 initialization service
+Before=pmon.service
+After=sysinit.target
+DefaultDependencies=no
+
+[Service]
+ExecStartPre=/usr/local/bin/juniper_qfx5240_64od_util.py install
+RemainAfterExit=yes
+StandardOutput=syslog+console
+StandardError=syslog+console
+
+[Install]
+WantedBy=multi-user.target

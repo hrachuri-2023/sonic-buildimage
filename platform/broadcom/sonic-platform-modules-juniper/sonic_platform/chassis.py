@@ -41,6 +41,7 @@ try:
     import syslog
     from sonic_platform_base.chassis_base import ChassisBase
     from sonic_py_common.general import getstatusoutput_noshell
+    from sonic_platform.sfp import cpld_reset, Sfp
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
@@ -55,6 +56,17 @@ class Chassis(ChassisBase):
 
     def __init__(self):
         ChassisBase.__init__(self)
+
+        self.PORT_START = 0
+        self.PORT_END = 65
+
+        self._sfp_list = [None] * 66
+        self.xcvr_presence_map = {}
+        cpld_reset()
+        for port in range(self.PORT_START, self.PORT_END + 1):
+            sfp_node = Sfp(port)
+            self.xcvr_presence_map[port] = '1' if sfp_node.get_presence() is True else '0'
+            self._sfp_list.append(sfp_node)
 
     def get_parameter_value(self,parameter_name):
         try:
@@ -231,6 +243,32 @@ class Chassis(ChassisBase):
             return crc_name
         else:
             return False
+    
+    def get_change_event(self, timeout):
+        start_ms = time.time() * 1000
+        port_dict = {}
+        change_dict = {}
+        change_dict['sfp'] = port_dict
+        while True:
+            time.sleep(0.5)
+            for port_num in range(self.PORT_START, (self.PORT_END + 1)):
+                presence = self.get_sfp(port_num-1).get_presence()
+                if(presence and self.xcvr_presence_map[port_num] == '0'):
+                    self.xcvr_presence_map[port_num] = '1'
+                    port_dict[port_num] = '1'
+                    self.get_sfp(port_num-1)._initialize_media(delay=True)
+                elif(not presence and
+                        self.xcvr_presence_map[port_num] == '1'):
+                    self.xcvr_presence_map[port_num] = '0'
+                    port_dict[port_num] = '0'
+
+            if(len(port_dict) > 0):
+                return True, change_dict
+
+            if timeout:
+                now_ms = time.time() * 1000
+                if (now_ms - start_ms >= timeout):
+                    return True, change_dict
 
     def get_reboot_cause(self):
         """
@@ -239,9 +277,9 @@ class Chassis(ChassisBase):
         platform_name = self.get_platform_name()
         platform_name = platform_name.replace("\r","")
         platform_name = platform_name.replace("\n","")
-	log_info("Juniper Platform name: {} and {}".format(self.get_platform_name(), platform_name))
-        if str(platform_name) == "x86_64-juniper_networks_qfx5210-r0":	
-	    log_info("Juniper Platform QFX5210 ")
+        log_info("Juniper Platform name: {} and {}".format(self.get_platform_name(), platform_name))
+        if str(platform_name) == "x86_64-juniper_networks_qfx5210-r0":
+            log_info("Juniper Platform QFX5210 ")
             status, last_reboot_reason = getstatusoutput_noshell(["i2cget", "-f", "-y", "0", "0x65", "0x24"])
             if (status == 0):
                 if last_reboot_reason == "0x80":
@@ -268,43 +306,44 @@ class Chassis(ChassisBase):
                 else:
                     return (ChassisBase.REBOOT_CAUSE_HARDWARE_OTHER, "Unknown reason")
 
-        elif str(platform_name) == "x86_64-juniper_networks_qfx5200-r0" : 		
-	    log_info("Juniper Platform QFX5200 ")
-	    status, major_version = getstatusoutput_noshell(["busybox", "devmem", "0xFED50000", "8"])
-	    status, minor_version = getstatusoutput_noshell(["busybox", "devmem", "0xFED50001", "8"])
-	    status, last_reboot_reason = getstatusoutput_noshell(["busybox", "devmem", "0xFED50004", "8"])
-	    if (status == 0):
-	        if (major_version == "0x31") and (minor_version == "0x03") and (last_reboot_reason == "0x80"):
-	            return (ChassisBase.REBOOT_CAUSE_NON_HARDWARE, None)
-	        elif (major_version == "0x31") and (minor_version == "0x05") and (last_reboot_reason == "0x02"):
-	            return (ChassisBase.REBOOT_CAUSE_NON_HARDWARE, None)
-	        elif last_reboot_reason == "0x40" or last_reboot_reason == "0x08":
-	            return (ChassisBase.REBOOT_CAUSE_WATCHDOG, None)
-	        elif last_reboot_reason == "0x20":
-	            return (ChassisBase.REBOOT_CAUSE_POWER_LOSS, None)
-	        elif last_reboot_reason == "0x10":
-	            return (ChassisBase.REBOOT_CAUSE_HARDWARE_OTHER, "Swizzle Reset")
-	        else:
-	            return (ChassisBase.REBOOT_CAUSE_HARDWARE_OTHER, "Unknown reason")
-	    else:
-	        time.sleep(3)
-		status, major_version = getstatusoutput_noshell(["busybox", "devmem", "0xFED50000", "8"])
-		status, minor_version = getstatusoutput_noshell(["busybox", "devmem", "0xFED50001", "8"])
-	        status, last_reboot_reason = getstatusoutput_noshell(["busybox", "devmem", "0xFED50004", "8"])
-	        if (status == 0):
-		    if (major_version == "0x31") and (minor_version == "0x03") and (last_reboot_reason == "0x80"):
-	            	return (ChassisBase.REBOOT_CAUSE_NON_HARDWARE, None)
-	            elif (major_version == "0x31") and (minor_version == "0x05") and (last_reboot_reason == "0x02"):
-	            	return (ChassisBase.REBOOT_CAUSE_NON_HARDWARE, None)
-              	    elif last_reboot_reason == "0x40" or last_reboot_reason == "0x08":
-                    	return (ChassisBase.REBOOT_CAUSE_WATCHDOG, None)
-                    elif last_reboot_reason == "0x20":
-                    	return (ChassisBase.REBOOT_CAUSE_POWER_LOSS, None)
-                    elif last_reboot_reason == "0x10":
-                    	return (ChassisBase.REBOOT_CAUSE_HARDWARE_OTHER, "Swizzle Reset")
-                    else:
-			return (ChassisBase.REBOOT_CAUSE_HARDWARE_OTHER, "Unknown reason")
-		else:
-		    log_info("Error while reading Re-Fpga")
+        elif str(platform_name) == "x86_64-juniper_networks_qfx5200-r0" :
+            log_info("Juniper Platform QFX5200 ")
+            status, major_version = getstatusoutput_noshell(["busybox", "devmem", "0xFED50000", "8"])
+            status, minor_version = getstatusoutput_noshell(["busybox", "devmem", "0xFED50001", "8"])
+            status, last_reboot_reason = getstatusoutput_noshell(["busybox", "devmem", "0xFED50004", "8"])
+            if (status == 0):
+                if (major_version == "0x31") and (minor_version == "0x03") and (last_reboot_reason == "0x80"):
+                    return (ChassisBase.REBOOT_CAUSE_NON_HARDWARE, None)
+                elif (major_version == "0x31") and (minor_version == "0x05") and (last_reboot_reason == "0x02"):
+                    return (ChassisBase.REBOOT_CAUSE_NON_HARDWARE, None)
+                elif last_reboot_reason == "0x40" or last_reboot_reason == "0x08":
+                    return (ChassisBase.REBOOT_CAUSE_WATCHDOG, None)
+                elif last_reboot_reason == "0x20":
+                    return (ChassisBase.REBOOT_CAUSE_POWER_LOSS, None)
+                elif last_reboot_reason == "0x10":
+                    return (ChassisBase.REBOOT_CAUSE_HARDWARE_OTHER, "Swizzle Reset")
+                else:
+                    return (ChassisBase.REBOOT_CAUSE_HARDWARE_OTHER, "Unknown reason")
+        elif str(platform_name) == "x86_64-juniper_networks_qfx5230-r0":
+            time.sleep(3)
+            log_info("Juniper Platform QFX5230 ")
+            status, major_version = getstatusoutput_noshell(["busybox", "devmem", "0xFED50000", "8"])
+            status, minor_version = getstatusoutput_noshell(["busybox", "devmem", "0xFED50001", "8"])
+            status, last_reboot_reason = getstatusoutput_noshell(["busybox", "devmem", "0xFED50004", "8"])
+            if (status == 0):
+                if (major_version == "0x31") and (minor_version == "0x03") and (last_reboot_reason == "0x80"):
+                    return (ChassisBase.REBOOT_CAUSE_NON_HARDWARE, None)
+                elif (major_version == "0x31") and (minor_version == "0x05") and (last_reboot_reason == "0x02"):
+                    return (ChassisBase.REBOOT_CAUSE_NON_HARDWARE, None)
+                elif last_reboot_reason == "0x40" or last_reboot_reason == "0x08":
+                    return (ChassisBase.REBOOT_CAUSE_WATCHDOG, None)
+                elif last_reboot_reason == "0x20":
+                    return (ChassisBase.REBOOT_CAUSE_POWER_LOSS, None)
+                elif last_reboot_reason == "0x10":
+                    return (ChassisBase.REBOOT_CAUSE_HARDWARE_OTHER, "Swizzle Reset")
+                else:
+                    return (ChassisBase.REBOOT_CAUSE_HARDWARE_OTHER, "Unknown reason")
+            else:
+                log_info("Error while reading Re-Fpga")
         else:
-	    log_info("Unsupported platform")
+            log_info("Unsupported platform")

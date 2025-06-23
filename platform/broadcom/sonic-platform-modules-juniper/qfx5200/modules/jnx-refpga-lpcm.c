@@ -24,7 +24,7 @@
 #include <linux/errno.h>
 #include <linux/ioport.h>
 
-#define REFPGA_LPC_BASE_ADDRESS		0xFED50000
+#define REFPGA_LPC_BASE_ADDRESS		0xFC800000
 #define REFPGA_LPC_WINDOW_SIZE		0x00000400
 
 #define REFPGA_MRE_LPCM_RST_CTL_REG	(0x3)
@@ -90,7 +90,7 @@ static int __init refpga_lpcm_init(void)
 		printk(KERN_ALERT "Restart handler registration failed\n");
 	}
 
-	iowrite8(REFPGA_MGMT1_PHY_RESET, (u8 *)fpga + REFPGA_MRE_LPCM_RST_CTL_REG);
+	//iowrite8(REFPGA_MGMT1_PHY_RESET, (u8 *)fpga + REFPGA_MRE_LPCM_RST_CTL_REG);
 
 	return 0;
 

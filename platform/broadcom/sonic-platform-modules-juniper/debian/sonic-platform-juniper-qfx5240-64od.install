@@ -1,0 +1,8 @@
+qfx5240-64od/utils/juniper_qfx5240_64od_util.py usr/local/bin
+qfx5240-64od/utils/juniper_qfx5240_64od_monitor.py usr/local/bin
+qfx5240-64od/utils/show_thresholds usr/local/bin
+qfx5240-64od/utils/temperature_thresholds_AFI.txt usr/local/bin
+qfx5240-64od/utils/temperature_thresholds_AFO.txt usr/local/bin
+qfx5240-64od/service/qfx5240-64od-platform-init.service etc/systemd/system
+qfx5240-64od/utils/wrapper-warm-reboot usr/local/bin
+qfx5240-64od/utils/wrapper-fast-reboot usr/local/bin

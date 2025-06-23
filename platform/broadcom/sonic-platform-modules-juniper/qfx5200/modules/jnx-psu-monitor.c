@@ -222,7 +222,7 @@ exit:
     return status;
 }
 
-static int jnx_psu_remove(struct i2c_client *client)
+static void jnx_psu_remove(struct i2c_client *client)
 {
     struct psu_data *data = i2c_get_clientdata(client);
 
@@ -230,7 +230,7 @@ static int jnx_psu_remove(struct i2c_client *client)
     sysfs_remove_group(&client->dev.kobj, &jnx_psu_group);
     kfree(data);
 
-    return 0;
+    return;
 }
 
 enum {
